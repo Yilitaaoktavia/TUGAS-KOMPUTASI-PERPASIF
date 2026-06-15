@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartExam — Komputasi Pervasif</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TOPBAR — selalu tampil di atas
+       ══════════════════════════════════════════════════════════ -->
+  <header id="topbar">
+    <div class="topbar-logo">Smart<span>Exam</span></div>
+
+    <!-- Status pills — muncul hanya saat ujian berlangsung -->
+    <div id="status-bar">
+      <div class="status-pill">
+        <div class="dot green" id="dot-tab"></div>
+        <span id="lbl-tab">Tab Aktif</span>
+      </div>
+      <div class="status-pill">
+        <div class="dot green" id="dot-afk"></div>
+        <span id="lbl-afk">Hadir</span>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       PAGE: START
+       ══════════════════════════════════════════════════════════ -->
+  <main class="page active" id="page-start">
+    <div class="start-card">
+      <div class="badge">Komputasi Pervasif</div>
+      <h1>Mini E-Ujian</h1>
+      <p class="subtitle">
+        Platform ujian online dengan pengawasan cerdas berbasis Web API.<br />
+        Sistem mendeteksi <em>presence</em> &amp; <em>attention</em> pengguna secara real-time.
+      </p>
+
+      <div class="form-group">
+        <label for="inp-nama">Nama Lengkap</label>
+        <input
+          type="text"
+          id="inp-nama"
+          placeholder="Masukkan nama lengkap Anda"
+          autocomplete="name"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="inp-nim">NIM / ID Peserta</label>
+        <input
+          type="text"
+          id="inp-nim"
+          placeholder="Masukkan NIM Anda"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="rules-box">
+        <div class="rules-title">⚠️ Peraturan Ujian</div>
+        <ul>
+          <li>5 soal pilihan ganda, waktu ujian <strong>5 menit</strong></li>
+          <li>Dilarang berpindah tab atau window browser</li>
+          <li>Berpindah tab <strong>3 kali</strong> → ujian dikunci otomatis</li>
+          <li>Tidak aktif selama <strong>20 detik</strong> → timer dijeda (AFK)</li>
+          <li>Semua pelanggaran dicatat dan ditampilkan di halaman hasil</li>
+        </ul>
+      </div>
+
+      <button class="btn btn-primary" onclick="ExamController.startExam()">
+        🚀 Mulai Ujian
+      </button>
+    </div>
+  </main>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       PAGE: EXAM
+       ══════════════════════════════════════════════════════════ -->
+  <main class="page" id="page-exam">
+    <div id="exam-layout">
+
+      <!-- Kolom kiri: soal -->
+      <section class="question-card">
+        <div class="q-label" id="q-label">Soal 1 dari 5</div>
+        <p id="q-text"></p>
+        <div id="options-container"></div>
+
+        <nav class="q-navigation">
+          <button class="btn-nav" onclick="ExamController.prevQuestion()">
+            ← Sebelumnya
+          </button>
+          <span id="q-counter">1 / 5</span>
+          <button class="btn-nav" onclick="ExamController.nextQuestion()">
+            Berikutnya →
+          </button>
+        </nav>
+      </section>
+
+      <!-- Kolom kanan: sidebar -->
+      <aside class="sidebar">
+
+        <!-- Timer -->
+        <div class="side-card">
+          <div class="side-title">⏱ Sisa Waktu</div>
+          <div class="timer-value" id="timer-display">05:00</div>
+          <div class="timer-sub">menit : detik</div>
+          <div id="afk-badge">💤 User is Away From Keyboard</div>
+        </div>
+
+        <!-- Navigasi soal -->
+        <div class="side-card">
+          <div class="side-title">📋 Navigasi Soal</div>
+          <div id="q-map"></div>
+        </div>
+
+        <!-- Statistik live -->
+        <div class="side-card">
+          <div class="side-title">📊 Pengawasan Live</div>
+          <div class="stat-row">
+            <span class="stat-label">Pindah Tab</span>
+            <span class="stat-val red" id="stat-tab">0×</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Total AFK</span>
+            <span class="stat-val yellow" id="stat-afk">0 dtk</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Terjawab</span>
+            <span class="stat-val" id="stat-ans">0 / 5</span>
+          </div>
+        </div>
+
+        <!-- Log aktivitas live -->
+        <div class="side-card">
+          <div class="side-title">🗒 Log Aktivitas</div>
+          <div id="log-list"></div>
+        </div>
+
+        <!-- Tombol kumpul -->
+        <button class="btn btn-danger" onclick="ExamController.confirmSubmit()">
+          ✅ Selesai &amp; Kumpulkan
+        </button>
+
+      </aside>
+    </div>
+  </main>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       PAGE: RESULT
+       ══════════════════════════════════════════════════════════ -->
+  <main class="page" id="page-result">
+    <div class="result-card">
+      <div class="badge">Hasil Ujian</div>
+      <h2 id="res-heading"></h2>
+
+      <!-- Lingkaran skor -->
+      <div class="score-ring" id="score-ring">
+        <div class="score-num" id="res-score">0</div>
+        <div class="score-sub">/ 100</div>
+      </div>
+
+      <!-- Ringkasan statistik -->
+      <div class="result-stats">
+        <div class="stat-row">
+          <span class="stat-label">Jawaban Benar</span>
+          <span class="stat-val" id="res-correct">0 / 5</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Perpindahan Tab</span>
+          <span class="stat-val red" id="res-tab">0×</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total Waktu AFK</span>
+          <span class="stat-val yellow" id="res-afk">0 detik</span>
+        </div>
+      </div>
+
+      <!-- Ringkasan perilaku naratif -->
+      <div class="section-title">📋 Ringkasan Perilaku</div>
+      <div id="behavior-summary"></div>
+
+      <!-- Log lengkap -->
+      <div class="section-title">🗒 Log Aktivitas Lengkap</div>
+      <div id="behavior-log"></div>
+
+      <div style="margin-top: 28px;">
+        <button class="btn btn-primary" onclick="ExamController.resetExam()">
+          🔄 Ulangi Ujian
+        </button>
+      </div>
+    </div>
+  </main>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       OVERLAYS
+       ══════════════════════════════════════════════════════════ -->
+
+  <!-- Overlay: Pindah Tab (peringatan) -->
+  <div class="overlay" id="overlay-tab-warning" role="dialog" aria-modal="true"
+       aria-labelledby="ov-tab-title">
+    <div class="overlay-box">
+      <span class="overlay-icon">⚠️</span>
+      <h2 id="ov-tab-title">Kamu Berpindah Tab!</h2>
+      <p>
+        Perpindahan tab ke-<strong id="tab-warning-count">1</strong> terdeteksi dan dicatat.
+        Batas maksimal <strong id="tab-warning-max">3</strong> kali.
+        Ujian dijeda sementara — kembali ke halaman ujian untuk melanjutkan.
+      </p>
+      <button class="btn btn-primary" onclick="Pervasive.resumeFromTabWarning()">
+        Kembali ke Ujian
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay: Ujian Dikunci -->
+  <div class="overlay" id="overlay-locked" role="dialog" aria-modal="true"
+       aria-labelledby="ov-lock-title">
+    <div class="overlay-box">
+      <span class="overlay-icon">🔒</span>
+      <h2 id="ov-lock-title">Ujian Dikunci</h2>
+      <p>
+        Kamu telah berpindah tab sebanyak <strong>3 kali</strong>.
+        Ujian dikunci dan dikumpulkan otomatis dengan skor yang ada saat ini.
+      </p>
+      <button class="btn btn-danger" onclick="ExamController.forceSubmit()">
+        Lihat Hasil
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay: AFK -->
+  <div class="overlay" id="overlay-afk-warning" role="dialog" aria-modal="true"
+       aria-labelledby="ov-afk-title">
+    <div class="overlay-box">
+      <span class="overlay-icon">💤</span>
+      <h2 id="ov-afk-title">Kamu Sedang AFK?</h2>
+      <p>
+        Tidak ada aktivitas selama <strong>20 detik</strong>.
+        Timer ujian dijeda. Gerakkan mouse atau tekan tombol apapun untuk melanjutkan.
+      </p>
+      <button class="btn btn-primary" onclick="Pervasive.resumeFromAfk()">
+        Saya Masih Di Sini!
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       SCRIPTS — urutan penting: data → state → modul → controller
+       ══════════════════════════════════════════════════════════ -->
+  <script src="js/questions.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/pervasive.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
